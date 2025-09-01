@@ -21,3 +21,26 @@ INPUT_CSV_DAY3 = PROCESSED_DIR / "survey_lung_day2.csv"   # Day2 的輸出
 OUTPUT_CSV_DAY3 = PROCESSED_DIR / "survey_lung_day3.csv"  # Day3 的輸出
 YES_RATIO_PLOT = PLOTS_DIR / "yes_ratio_top20.png"        # 圖片集中到 plots
 TOPK = 20  # 繪圖時取 YES 比例最高的前 K 題
+# 目標欄（Day4 會嚴格正規化、Day5 依此訓練）
+TARGET_COL = "LUNG_CANCER"
+
+# 可擴充的標籤對照表（Day4 先用這個把標籤轉為 0/1）
+LABEL_MAP = {
+    "LUNG_CANCER": {
+        # 英文常見寫法
+        "YES":1, "NO":0, "Y":1, "N":0, "TRUE":1, "FALSE":0, "T":1, "F":0,
+        "POSITIVE":1, "NEGATIVE":0, "PRESENT":1, "ABSENT":0,
+        # 中文常見寫法
+        "是":1, "否":0, "有":1, "無":0, "陽性":1, "陰性":0,
+        # 數字字串
+        "1":1, "0":0, "1.0":1, "0.0":0
+    }
+}
+
+# Day4 主輸出（Day5 會讀這個）
+OUTPUT_CSV_DAY4 = PROCESSED_DIR / "survey_lung_day4.csv"
+# 也可以用既有命名風格：PROCESSED_DIR / "day4_cleaned.csv"
+
+# Day5 產物資料夾（ROC、混淆矩陣、metrics 等）
+ARTIFACTS_DAY5 = Path("artifacts_day5")
+

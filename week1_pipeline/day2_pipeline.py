@@ -1,16 +1,11 @@
-# ------------------------------------------------
-# Step 10：批次轉換 YES/NO → 1/0（僅轉真正 YES/NO 的欄位）
-# 做法：
-# 1) 先找出所有字串欄位（object）
-# 2) 檢查每欄的「去空白、轉大寫」後的唯一值集合
-# 3) 若值域僅包含 YES/NO（或含空值），才做映射成 1/0
-# 這樣可避免把像 CITY/SEX/NAME 等非 YES/NO 欄位錯誤轉換為 NaN
-# ------------------------------------------------
 import pandas as pd
 import numpy as np
 from pathlib import Path
+import sys
 import matplotlib.pyplot as plt
-
+ROOT = Path(__file__).resolve().parent.parent  # 指到 lung_project 根目錄
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 from project_config import PROC_OUT, OUTPUT_DAY2
 
 def run_day2():
@@ -122,3 +117,5 @@ def run_day2():
         plt.grid(True, linestyle="--", alpha=0.6)
         plt.tight_layout()
         plt.show()
+if __name__ == "__main__":
+    run_day2()

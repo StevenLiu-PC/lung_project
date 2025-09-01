@@ -5,6 +5,9 @@ import pandas as pd     # 用來讀取與處理資料
 import numpy as np
 import sys
 from pathlib import Path
+ROOT = Path(__file__).resolve().parent.parent  # 指到 lung_project 根目錄
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from project_config import csv_path, RAW_DIR, PROCESSED_DIR, RAW_OUT, PROC_OUT
 
@@ -78,3 +81,5 @@ def run_day1():
     print("Processed shape:", df_processed.shape)
     print("Target distribution (LUNG_CANCER):")
     print(df_processed["LUNG_CANCER"].value_counts(dropna=False))
+if __name__ == "__main__":
+    run_day1()

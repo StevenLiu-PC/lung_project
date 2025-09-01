@@ -1,0 +1,24 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual env
+.venv/
+env/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Project outputs (建議不版控)
+data_lung/raw/
+data_lung/processed/
+data_lung/plots/
+artifacts_day5/
+
+# OS cruft
+.DS_Store
+Thumbs.db
