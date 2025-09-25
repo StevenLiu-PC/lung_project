@@ -1,3 +1,6 @@
+﻿# Day4 pipeline: 嚴格目標欄標準化（strict）
+# 註解：僅新增說明，不影響程式邏輯
+
 import sys
 from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
@@ -7,176 +10,177 @@ if str(ROOT) not in sys.path:
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# 中文字體（可選）
+# 銝剜?摮?嚗?賂?
 plt.rcParams["font.sans-serif"] = ["Microsoft JhengHei"]
 plt.rcParams["axes.unicode_minus"] = False
 
-# === 路徑設定（優先吃 project_config）===
+# === 頝臬?閮剖?嚗?? project_config嚗?==
 from project_config import (
-    OUTPUT_CSV_DAY3 as INPUT_CSV,   #  Day3 的【輸出】拿來當 Day4 的輸入
-    OUTPUT_CSV_DAY4 as OUTPUT_MAIN, # Day4 主輸出
-    TARGET_COL as TARGET,           # 目標欄名（例如 LUNG_CANCER）
-    LABEL_MAP,                      # 可配置的標籤對照表
+    OUTPUT_CSV_DAY3 as INPUT_CSV,   #  Day3 ?撓?箝靘 Day4 ?撓??
+    OUTPUT_CSV_DAY4 as OUTPUT_MAIN, # Day4 銝餉撓??
+    TARGET_COL as TARGET,           # ?格?甈?嚗?憒?LUNG_CANCER嚗?
+    LABEL_MAP,                      # ?舫?蝵桃?璅惜撠銵?
 )
 OUTPUT_DIR = Path(OUTPUT_MAIN).parent
 OUTPUT_SUM = OUTPUT_DIR / "day4_feature_summary.csv"
 
-""" 把字串欄位定義normalization避免因為大小寫或空白導致判斷不一致。 """
+""" ??銝脫?雿?蝢姊ormalization?踹??憭批?撖急?蝛箇撠?斗銝??氬?"""
 def normalize_str(s: pd.Series) -> pd.Series: 
-    if s.dtype == object:      #判斷這一欄是不是 文字型資料（object 類型）
+    if s.dtype == object:      #?斗??甈銝 ??????object 憿?嚗?
         return s.astype(str).str.strip().str.upper() 
-                    #不管原始輸入是 "Yes"、" yes "、"YES"，最後統一都變成 "YES"。
-    return s    #如果不是文字欄位（例如數字型），就原樣回傳，不做任何修改
+                    #銝恣??頛詨??"Yes"?? yes "??YES"嚗?敺絞銝?質???"YES"??
+    return s    #憒?銝??甈?嚗?憒摮?嚗?撠勗?璅???喉?銝?隞颱?靽格
 
-# ★ 只用於一般欄位的 YES/NO 轉 1/0（目標欄另行處理）
+# ???芰?潔??祆?雿? YES/NO 頧?1/0嚗璅??西???嚗?
 GENERAL_YESNO_MAP = {
-    "YES":1,"NO":0,"Y":1,"N":0,"TRUE":1,"FALSE":0,"是":1,"否":0,"1":1,"0":0,"1.0":1,"0.0":0
+    "YES":1,"NO":0,"Y":1,"N":0,"TRUE":1,"FALSE":0,"??:1,"??:0,"1":1,"0":0,"1.0":1,"0.0":0
 }
 GENERAL_ALLOWED = set(GENERAL_YESNO_MAP.keys())
 
-# ★ Parquet 安全寫入：有引擎就寫，沒有就優雅跳過
+# ??Parquet 摰撖怠嚗?撘?撠勗神嚗??停?芷?頝喲?
 def _write_parquet_safe(df: pd.DataFrame, out_path: Path) -> None:
     try:
-        df.to_parquet(out_path, index=False, engine="pyarrow")  # ★
-        print(f"[Day4] 已輸出 Parquet（pyarrow）：{out_path}")   # ★
+        df.to_parquet(out_path, index=False, engine="pyarrow")  # ??
+        print(f"[Day4] 撌脰撓??Parquet嚗yarrow嚗?{out_path}")   # ??
         return
     except Exception:
         pass
     try:
-        df.to_parquet(out_path, index=False, engine="fastparquet")  # ★
-        print(f"[Day4] 已輸出 Parquet（fastparquet）：{out_path}")  # ★
+        df.to_parquet(out_path, index=False, engine="fastparquet")  # ??
+        print(f"[Day4] 撌脰撓??Parquet嚗astparquet嚗?{out_path}")  # ??
         return
     except Exception:
-        print("[Day4] 跳過 Parquet 輸出：未安裝 pyarrow/fastparquet 或引擎不可用。")  # ★
-        # ★ 不拋例外，讓流程繼續（CSV 仍會輸出）
+        print("[Day4] 頝喲? Parquet 頛詨嚗摰? pyarrow/fastparquet ?????舐??)  # ??
+        # ??銝?靘?嚗?瘚?蝜潛?嚗SV 隞?頛詨嚗?
 
 def _normalize_target_strict(df: pd.DataFrame, strict: bool = True) -> pd.DataFrame:
     """
-    ★ 嚴格處理目標欄（只在 Day4 做、保證 Day5 可用）
-    流程：
-      1) 目標欄存在 → 去空白+轉大寫
-      2) 先用 project_config.LABEL_MAP[TARGET] 映射到 0/1
-      3) 若仍全 NaN,嘗試「數字二元容錯」（例如資料其實是 1/2)
-      4) 嚴格檢查：不得有 NaN、且為二元
+    ???湔???格?甈??芸 Day4 ??霅?Day5 ?舐嚗?
+    瘚?嚗?
+      1) ?格?甈??????餌征??頧之撖?
+      2) ? project_config.LABEL_MAP[TARGET] ????0/1
+      3) ?乩???NaN,?岫?摮??捆?胯?靘?鞈??嗅祕??1/2)
+      4) ?湔瑼Ｘ嚗?敺? NaN???箔???
     """
     if TARGET not in df.columns:
-        raise ValueError(f"[Day4] 找不到目標欄 `{TARGET}`。")
+        raise ValueError(f"[Day4] ?曆??啁璅? `{TARGET}`??)
 
-    # 1) 字串正規化
+    # 1) 摮葡甇????
     s_raw = df[TARGET]
     if s_raw.dtype == object:
         s_norm = normalize_str(s_raw)
     else:
         s_norm = s_raw.astype(str).str.strip().str.upper()
 
-    # 2) 對照表（可在 project_config.LABEL_MAP 擴充）
+    # 2) 撠銵剁??臬 project_config.LABEL_MAP ?游?嚗?
     target_map = LABEL_MAP.get(TARGET, GENERAL_YESNO_MAP)
     s_map = s_norm.map(target_map)
 
-    # 3) 數字二元容錯（如 1/2、0/1 之類）
+    # 3) ?詨?鈭?摰寥嚗? 1/2??/1 銋?嚗?
     if s_map.notna().sum() == 0:
         s_num = pd.to_numeric(s_norm, errors="coerce")
         uniq = sorted(v for v in s_num.dropna().unique())
         if len(uniq) == 2:
             a, b = uniq
-            # 若不是剛好 {0,1}，就把較小值對 0、較大值對 1
+            # ?乩??臬?憟?{0,1}嚗停??撠澆? 0??憭批澆? 1
             map2 = {a:0, b:1} if set(uniq) != {0,1} else {0:0, 1:1}
-            print(f"[Day4] 偵測到數字二元標籤 {uniq} → 採用對映 {map2}")
+            print(f"[Day4] ?菜葫?唳摮???蝐?{uniq} ???∠撠? {map2}")
             s_map = s_num.map(map2)
 
-    # 4) 嚴格檢查
+    # 4) ?湔瑼Ｘ
     na_cnt = int(s_map.isna().sum())
     nunique = s_map.nunique(dropna=True)
     if strict:
         if na_cnt > 0:
             bad = normalize_str(s_raw)[s_map.isna()].value_counts().head(10)
             raise ValueError(
-                f"[Day4] 目標欄 `{TARGET}` 有 {na_cnt} 筆無法辨識（NaN）。"
-                f"\n請在 project_config.LABEL_MAP['{TARGET}'] 補對照。"
-                f"\n[未辨識值 Top10]\n{bad}"
+                f"[Day4] ?格?甈?`{TARGET}` ??{na_cnt} 蝑瘜儘霅?NaN嚗?
+                f"\n隢 project_config.LABEL_MAP['{TARGET}'] 鋆??扼?
+                f"\n[?芾儘霅?Top10]\n{bad}"
             )
         if nunique < 2:
-            raise ValueError(f"[Day4] 目標欄 `{TARGET}` 非二元（nunique={nunique}）。")
+            raise ValueError(f"[Day4] ?格?甈?`{TARGET}` ????nunique={nunique}嚗?)
         df[TARGET] = s_map
     else:
-        # 非嚴格模式：丟掉 NaN 列
+        # ??潭芋撘?銝? NaN ??
         if na_cnt:
             df = df[s_map.notna()].copy()
             s_map = s_map.loc[df.index]
         if s_map.nunique(dropna=True) < 2:
-            raise ValueError(f"[Day4] 目標欄 `{TARGET}` 清理後仍非二元。")
+            raise ValueError(f"[Day4] ?格?甈?`{TARGET}` 皜?敺?????)
         df[TARGET] = s_map
 
     return df
 
 def run_day4(strict: bool = True):
-    # 1) 讀檔
+    # 1) 霈瑼?
     # df = pd.read_csv(INPUT_CSV)
-    df = pd.read_csv(INPUT_CSV, encoding="utf-8-sig")              # ★ 統一讀檔編碼，處理 BOM
-    df.columns = [c.lstrip("\ufeff") for c in df.columns]          # ★ 去掉欄名前導 BOM（保險）
-    print("[Day4] 讀入：", df.shape)
+    df = pd.read_csv(INPUT_CSV, encoding="utf-8-sig")              # ??蝯曹?霈瑼楊蝣潘??? BOM
+    df.columns = [c.lstrip("\ufeff") for c in df.columns]          # ???餅?甈??? BOM嚗??迎?
+    print("[Day4] 霈?伐?", df.shape)
 
-    # ★ 新增：檢查是否整份表只有 1 欄（避免只有 target 卻沒特徵）
+    # ???啣?嚗炎?交?行隞質”?芣? 1 甈??踹??芣? target ?餅??孵噩嚗?
     if df.shape[1] <= 1:
-        raise ValueError("[Day4] 輸入資料只有 1 欄，缺少特徵，請檢查 Day3 輸出內容。")
+        raise ValueError("[Day4] 頛詨鞈??芣? 1 甈?蝻箏??孵噩嚗?瑼Ｘ Day3 頛詨?批捆??)
 
-    # ★ 1.1) 先處理目標欄（只處理標籤，不動特徵）
+    # ??1.1) ???璅?嚗??璅惜嚗??敺蛛?
     df = _normalize_target_strict(df, strict=strict)
 
-    # 2) 呼叫字串定義（排除目標欄）
-    for col in df.select_dtypes(include="object").columns: #找出所有文字型欄位
+    # 2) ?澆摮葡摰儔嚗??斤璅?嚗?
+    for col in df.select_dtypes(include="object").columns: #?曉???摮?甈?
         if col == TARGET:
             continue
         df[col] = normalize_str(df[col])
 
-    # 3) 將YES/NO 轉換成 1/0（排除目標欄；目標已處理）
+    # 3) 撠ES/NO 頧???1/0嚗??斤璅?嚗璅歇??嚗?
     obj_cols = df.select_dtypes(include="object").columns
     for col in obj_cols:
         if col == TARGET: 
             continue
-        uniq = set(df[col].dropna().unique().tolist()) #取得欄位中所有不重複的值（去掉缺值）
-        if len(uniq) > 0 and uniq.issubset(GENERAL_ALLOWED): #確認這一欄真的只包含允許集合，才轉換
-            df[col] = df[col].map(GENERAL_YESNO_MAP)  #把 YES/NO 轉成 1/0
+        uniq = set(df[col].dropna().unique().tolist()) #??甈?銝剜??????潘??餅?蝻箏潘?
+        if len(uniq) > 0 and uniq.issubset(GENERAL_ALLOWED): #蝣箄???甈????迂??嚗?頧?
+            df[col] = df[col].map(GENERAL_YESNO_MAP)  #??YES/NO 頧? 1/0
 
-    # 4) 缺值處理 Missing Value Imputation（僅特徵欄，目標欄不填補）
+    # 4) 蝻箏潸???Missing Value Imputation嚗??孵噩甈??格?甈?憛怨?嚗?
     num_cols = [c for c in df.select_dtypes(include="number").columns if c != TARGET]
     for col in num_cols:
-        if df[col].isna().any():  #會產生布林值序列，只要這欄裡有一個缺值，就回傳 True
-            df[col] = df[col].fillna(df[col].mean()) #把缺值該欄填入平均值
+        if df[col].isna().any():  #????澆????芾???鋆⊥?銝?撩?潘?撠勗???True
+            df[col] = df[col].fillna(df[col].mean()) #?撩?潸府甈‵?亙像??
 
-    # 5) 找出沒有變化的欄位（排除目標欄）
-    """ 取出所有欄位名稱,逐一檢查每個欄位,找出欄位有多少種唯一值包含nan,
-    如果欄位只有 0 或 1 種值，代表這欄 沒有變化 """
+    # 5) ?曉瘝?霈???雿???格?甈?
+    """ ????雿?蝔???瑼Ｘ瘥?雿??曉甈???撠車?臭??澆??南an,
+    憒?甈??芣? 0 ??1 蝔桀潘?隞?”?? 瘝?霈? """
     constant_cols = [c for c in df.columns if c != TARGET and df[c].nunique(dropna=False) <= 1]
     if constant_cols:
-        print("[Day4] 移除無變化欄位：", constant_cols)
+        print("[Day4] 蝘駁?∟???雿?", constant_cols)
         for c in constant_cols:
-            uniq_vals = df[c].unique().tolist() #把 numpy array 轉成 Python 的 list 讓表單更好看
-            print(f"  - {c} (唯一值: {uniq_vals})")#(f"...{變數}...") 語法糖
-        df = df.drop(columns=constant_cols)  #從 DataFrame 移除這些欄位
+            uniq_vals = df[c].unique().tolist() #??numpy array 頧? Python ??list 霈”?格憟賜?
+            print(f"  - {c} (?臭??? {uniq_vals})")#(f"...{霈}...") 隤?蝟?
+        df = df.drop(columns=constant_cols)  #敺?DataFrame 蝘駁??甈?
     else:
-        print("[Day4] 沒有偵測到無變化欄位")
+        print("[Day4] 瘝??菜葫?啁霈?甈?")
 
-    # 6) 建立輸出資料夾
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True) #確保檔案有存入 
-    # df.to_csv(OUTPUT_MAIN, index=False)  #把整理好的資料表 df 存成一個 CSV 檔，檔案路徑就是 OUTPUT_MAIN
-    df.to_csv(OUTPUT_MAIN, index=False, encoding="utf-8-sig", sep=",")  # ★ 固定 sep/編碼，Excel 友善、Day10 穩讀
-    _write_parquet_safe(df, Path(OUTPUT_MAIN).with_suffix(".parquet"))  # ★ 內部交換：無引擎時自動跳過
+    # 6) 撱箇?頛詨鞈?憭?
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True) #蝣箔?瑼?????
+    # df.to_csv(OUTPUT_MAIN, index=False)  #??末???” df 摮?銝??CSV 瑼?瑼?頝臬?撠望 OUTPUT_MAIN
+    df.to_csv(OUTPUT_MAIN, index=False, encoding="utf-8-sig", sep=",")  # ???箏? sep/蝺函Ⅳ嚗xcel ???ay10 蝛抵?
+    _write_parquet_safe(df, Path(OUTPUT_MAIN).with_suffix(".parquet"))  # ???折鈭斗?嚗撘???歲??
 
-    # 7) 欄位摘要（型態/缺值數/唯一值數/範例）
+    # 7) 甈???嚗???蝻箏潭/?臭??潭/蝭?嚗?
     summary = df.apply(lambda s: pd.Series({
         "dtype": s.dtype,
         "na_cnt": int(s.isna().sum()),
         "nunique": int(s.nunique(dropna=False)),
-        "sample": s.dropna().head(3).tolist()  # ★ 新增：控制範例輸出不要太長
-    }))#幫整張資料表做一份『欄位說明書』，包含每一欄的型態、缺值數量、唯一值數量、以及前幾筆範例，
-    # summary.to_csv(OUTPUT_SUM)  #存成一個 CSV 檔
-    summary.to_csv(OUTPUT_SUM, encoding="utf-8-sig")               # ★ 摘要也用 utf-8-sig，Excel 顯示不亂碼
+        "sample": s.dropna().head(3).tolist()  # ???啣?嚗?嗥?靘撓?箔?閬云??
+    }))#撟急撘菔??”??隞賬?雿牧????瘥?甈????撩?潭?銝?潭?誑??撟曄?蝭?嚗?
+    # summary.to_csv(OUTPUT_SUM)  #摮?銝??CSV 瑼?
+    summary.to_csv(OUTPUT_SUM, encoding="utf-8-sig")               # ????銋 utf-8-sig嚗xcel 憿舐內銝?蝣?
 
-    print("✅ 完成。主輸出：", OUTPUT_MAIN)
-    print("✅ 完成。摘要輸出：", OUTPUT_SUM)
-    print("[Day4] 最終形狀：", df.shape)
+    print("??摰??蜓頛詨嚗?, OUTPUT_MAIN)
+    print("??摰???閬撓?綽?", OUTPUT_SUM)
+    print("[Day4] ?蝯耦?嚗?, df.shape)
     return OUTPUT_MAIN
 
 if __name__ == "__main__":
     run_day4(strict=True)
+
