@@ -1,7 +1,10 @@
+﻿# Day6 pipeline: 交叉驗證骨架與報表
+# 註解：僅新增說明，不影響程式邏輯
+
 import sys
 from pathlib import Path
 
-# week1_pipeline/xxx.py → 專案根 (lung_project)
+# week1_pipeline/xxx.py ??撠???(lung_project)
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
@@ -11,13 +14,13 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# 字型設定（可視需要保留）
+# 摮?閮剖?嚗閬?閬???
 plt.rcParams["font.sans-serif"] = ["Microsoft JhengHei"]
 plt.rcParams["axes.unicode_minus"] = False
 
-# 從設定檔讀取 Day4 路徑與目標欄；若失敗用預設
+# 敺身摰?霈??Day4 頝臬??璅?嚗憭望??券?閮?
 try:
-    from project_config import OUTPUT_CSV_DAY4 as INPUT_CSV_PATH  # Day4 的輸出
+    from project_config import OUTPUT_CSV_DAY4 as INPUT_CSV_PATH  # Day4 ?撓??
 except Exception:
     INPUT_CSV_PATH = Path("data_lung/processed/day4_cleaned.csv")
 
@@ -26,69 +29,69 @@ try:
 except Exception:
     TARGET_COLUMN_NAME = "LUNG_CANCER"
 
-# Day6 輸出成品資料夾與檔名
+# Day6 頛詨??鞈?憭曇?瑼?
 ARTIFACTS_DIR = Path("artifacts_day6")
 CV_METRICS_CSV = ARTIFACTS_DIR / "cv_metrics.csv"
 CV_REPORT_TXT = ARTIFACTS_DIR / "cv_classification_reports.txt"
 
 # ----------------------------------------------------------------------
-# 工具：檢查目標欄是否存在、且類別數足夠（至少兩類）
+# 撌亙嚗炎?亦璅??臬摮??憿?貉雲憭??喳??拚?嚗?
 # ----------------------------------------------------------------------
 def check_target_column(dataframe: pd.DataFrame, target_column: str) -> None:
-    """確認目標欄位是否存在，並且確定它的類別數是否足夠做分類。"""
+    """蝣箄??格?甈??臬摮嚗蒂銝Ⅱ摰????交?臬頞喳???憿?""
     if target_column not in dataframe.columns:
-        raise ValueError(f"[Day6] 找不到目標欄：{target_column}")
+        raise ValueError(f"[Day6] ?曆??啁璅?嚗target_column}")
     n_unique = dataframe[target_column].nunique(dropna=True)
-    # 如果類別數小於 2 → 代表整欄都是同一個值（例如全是 1），無法訓練分類模型
+    # 憒?憿?詨???2 ??隞?”?湔??賣???潘?靘??冽 1嚗??⊥?閮毀??璅∪?
     if n_unique < 2:
-        raise ValueError(f"[Day6] 目標欄 `{target_column}` 類別數為 {n_unique}，無法做分類。")
+        raise ValueError(f"[Day6] ?格?甈?`{target_column}` 憿?貊 {n_unique}嚗瘜?????)
 
-# 工具：將類別欄位 one-hot（排除目標欄），處理 ±inf/NaN，回傳 (X, y)
+# 撌亙嚗?憿甈? one-hot嚗??斤璅?嚗??? 簣inf/NaN嚗???(X, y)
 def prepare_features_and_target(dataframe: pd.DataFrame, target_column: str) -> tuple[pd.DataFrame, pd.Series]:
-    #把原始資料表拆成特徵 X與標籤 y
+    #??憪??”???孵噩 X??蝐?y
     categorical_columns = [c for c in dataframe.select_dtypes(include="object").columns if c != target_column]
-    #從資料表裡找出資料型態為字串（object）的欄位，這些通常代表類別型特徵（如性別、地區…）。同時排除目標欄（target_column），避免把 y 拿去做特徵編碼。
+    #敺??”鋆⊥?箄????摮葡嚗bject嚗?甈?嚗??虜隞?”憿?敺蛛?憒批???佗??????斤璅?嚗arget_column嚗??踹???y ?踹?敺萇楊蝣潦?
     if categorical_columns:
         dataframe = pd.get_dummies(
             dataframe,
             columns=categorical_columns,
-            drop_first=True,   # 避免虛擬變數陷阱（Dummy Variable Trap）
-            dummy_na=True      # 類別缺失值也成為一個欄位（例如 Gender_NaN）
+            drop_first=True,   # ?踹??霈?琿嚗ummy Variable Trap嚗?
+            dummy_na=True      # 憿蝻箏仃?潔??銝??雿?靘? Gender_NaN嚗?
         )
-        print(f"[Day6] 已 one-hot 編碼欄位：{categorical_columns}")
-        #僅做紀錄與除錯：在終端顯示哪些欄位被做了 one-hot，方便回頭檢查流程。
-        #用 one-hot 編碼把類別欄位變成 0/1 欄位模型才能吃。
+        print(f"[Day6] 撌?one-hot 蝺函Ⅳ甈?嚗categorical_columns}")
+        #??蝝???日嚗蝯垢憿舐內?芯?甈?鋡怠?鈭?one-hot嚗靘踹??剜炎?交?蝔?
+        #??one-hot 蝺函Ⅳ???交?雿???0/1 甈?璅∪????
 
-    target_series = dataframe[target_column]  #從資料表中取出目標欄位，存成 target_series y：（例如 LUNG_CANCER 0/1）
-    feature_dataframe = dataframe.drop(columns=[target_column])  # 把目標欄位刪掉，剩下的就是特徵 X。
+    target_series = dataframe[target_column]  #敺??”銝剖??箇璅?雿?摮? target_series y嚗?靘? LUNG_CANCER 0/1嚗?
+    feature_dataframe = dataframe.drop(columns=[target_column])  # ?璅?雿???拐??停?舐敺?X??
 
-    # 先把無限大/小改成缺值  → 把缺值用 0 補上，不然整個模型 .fit() 會直接崩潰。
+    # ???⊿?憭?撠?撩?? ???撩?潛 0 鋆?嚗??嗆?芋??.fit() ??亙援瞏啜?
     feature_dataframe = feature_dataframe.replace([np.inf, -np.inf], np.nan).fillna(0)
 
     return feature_dataframe, target_series
-    #feature_dataframe → 特徵 X（已經確保沒有 NaN/±inf）    target_series → 標籤 y
+    #feature_dataframe ???孵噩 X嚗歇蝬Ⅱ靽???NaN/簣inf嚗?   target_series ??璅惜 y
 
 
-# 工具：繪製「平均 ROC 曲線」給單一模型（若各折有 predict_proba）
+# 撌亙嚗鼓鋆賬像??ROC ?脩??策?桐?璅∪?嚗????predict_proba嚗?
 
 def plot_mean_roc(all_fprs: list[np.ndarray], all_tprs: list[np.ndarray], out_path: Path, title: str) -> None:
     """
-    all_fprs:每一折交叉驗證算出來的 FPR假陽性率, False Positive Rate
-    all_tprs:每一折的 TPR真陽性率, True Positive Rate,也是一個 ndarray 的清單。
-    說明：
-      - 使用每一折的假陽性率(FPR)與真陽性率(TPR)
-      - 內插到共同的 FPR 網格(0~1),再逐點取平均 → 得到平均 ROC
+    all_fprs:瘥??漱??霅??箔???FPR??抒?, False Positive Rate
+    all_tprs:瘥??? TPR??抒?, True Positive Rate,銋銝??ndarray ???柴?
+    隤芣?嚗?
+      - 雿輻瘥?????抒?(FPR)???賣抒?(TPR)
+      - ?扳??啣?? FPR 蝬脫(0~1),???像????敺撟喳? ROC
     """
     if not all_fprs or not all_tprs:
-        print(f"[Day6] 沒有可用的 FPR/TPR,略過平均 ROC 圖：{title}")
+        print(f"[Day6] 瘝??舐??FPR/TPR,?仿?撟喳? ROC ??{title}")
         return
-    #如果沒有 FPR 或 TPR（例如模型不支援 predict_proba）就直接跳過，不要畫圖。
+    #憒?瘝? FPR ??TPR嚗?憒芋???舀 predict_proba嚗停?湔頝喲?嚗?閬??
 
     common_fpr = np.linspace(0, 1, 200)
     tpr_stack = []
-    """ np.linspace(0, 1, 200) → 在 0 到 1 之間，平均切 200 個點。
-        意思：我要建立一條「共同的 X 軸FPR」來對齊。
-        tpr_stack → 用來存放「每一折的內插後 TPR」。
+    """ np.linspace(0, 1, 200) ????0 ??1 銋?嚗像?? 200 ????
+        ????撱箇?銝璇?? X 頠睢PR??撠???
+        tpr_stack ???其?摮??銝???扳?敺?TPR??
      """
 
     from numpy import interp
@@ -96,142 +99,142 @@ def plot_mean_roc(all_fprs: list[np.ndarray], all_tprs: list[np.ndarray], out_pa
         interp_tpr = interp(common_fpr, fpr, tpr)
         tpr_stack.append(interp_tpr)
     
-    """ zip(all_fprs, all_tprs) → 把 FPR 和 TPR 一一配對（同一折的數據）。
-        interp(common_fpr, fpr, tpr) →
-                把原本「稀疏不一樣的 FPR-TPR 點」拉伸到 共同的 200 個 FPR 節點。
-                這樣才可以逐點平均，不會對不齊。
-        append → 把每一折的內插後 TPR 存進堆疊。
+    """ zip(all_fprs, all_tprs) ????FPR ??TPR 銝銝??嚗?銝???豢?嚗?
+        interp(common_fpr, fpr, tpr) ??
+                ???研???銝璅?? FPR-TPR 暺?隡詨 ?勗???200 ??FPR 蝭暺?
+                ?見?隞仿?撟喳?嚗???銝???
+        append ????銝???扳?敺?TPR 摮脣???
     """
     mean_tpr = np.mean(np.vstack(tpr_stack), axis=0)
-    """ np.vstack(tpr_stack) → 把所有折的 TPR 堆成一個矩陣（每一列是一折）。
-        np.mean(..., axis=0) → 對每個 FPR 節點，算所有折的平均 TPR。
-        結果就是一條「平均 ROC 曲線」。 
+    """ np.vstack(tpr_stack) ????????TPR ??銝????瘥??銝????
+        np.mean(..., axis=0) ??撠???FPR 蝭暺?蝞????像??TPR??
+        蝯?撠望銝璇像??ROC ?脩???
     """
     plt.figure()
-    plt.plot(common_fpr, mean_tpr, label="Mean ROC")  #x 軸 = common_fpr（0~1 的標準格子）。y 軸 = mean_tpr（每格取平均的真陽性率）
-    plt.plot([0, 1], [0, 1], "--")  # 參考對角線（隨機分類）
-    plt.xlabel("False Positive Rate") # x 軸 = 假陽性率 (FPR)
-    plt.ylabel("True Positive Rate")  # y 軸 = 真陽性率 (TPR)。
+    plt.plot(common_fpr, mean_tpr, label="Mean ROC")  #x 頠?= common_fpr嚗?~1 ??皞摮?? 頠?= mean_tpr嚗??澆?撟喳????賣抒?嚗?
+    plt.plot([0, 1], [0, 1], "--")  # ??閫?嚗璈?憿?
+    plt.xlabel("False Positive Rate") # x 頠?= ??抒? (FPR)
+    plt.ylabel("True Positive Rate")  # y 頠?= ??抒? (TPR)??
     plt.title(title)
     plt.legend()
     plt.tight_layout()
     out_path.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(out_path, dpi=150)
-    #確保輸出的資料夾存在（沒有就自動建），然後存圖到 out_path 路徑，解析度 150 dpi。
+    #蝣箔?頛詨???冗摮嚗??停?芸?撱綽?嚗敺?? out_path 頝臬?嚗圾?漲 150 dpi??
     plt.close()
 
-# 主流程：交叉驗證
+# 銝餅?蝔?鈭文?撽?
 def run_day6(
-    input_csv_path: str | Path = INPUT_CSV_PATH, #資料來源路徑
-    target_column: str = TARGET_COLUMN_NAME,  #目標欄位名稱
-    n_splits: int = 5,   #K 折交叉驗證的「折數」
-    random_state: int = 42, #隨機種子。固定這個值，讓折分結果可重現
+    input_csv_path: str | Path = INPUT_CSV_PATH, #鞈?靘?頝臬?
+    target_column: str = TARGET_COLUMN_NAME,  #?格?甈??迂
+    n_splits: int = 5,   #K ?漱??霅????詻?
+    random_state: int = 42, #?冽?蝔桀??摰潘?霈?????
 ) -> Path:
     """
-    執行交叉驗證流程：
-      - 讀 Day4 清理輸出
-      - 檢查/正規化目標欄
-      - one-hot 類別特徵、處理缺值
-      - 使用 StratifiedKFold 做 K 折交叉驗證，計算各折指標
-      - 若模型支援 predict_proba,額外繪製「平均 ROC」
-      - 輸出:cv_metrics.csv、cv_classification_reports.txt、(模型)平均 ROC 圖
+    ?瑁?鈭文?撽?瘚?嚗?
+      - 霈 Day4 皜?頛詨
+      - 瑼Ｘ/甇???璅?
+      - one-hot 憿?孵噩???撩??
+      - 雿輻 StratifiedKFold ??K ?漱??霅?閮?????
+      - ?交芋???predict_proba,憿?蝜芾ˊ?像??ROC??
+      - 頛詨:cv_metrics.csv?v_classification_reports.txt??璅∪?)撟喳? ROC ??
     """
-    ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True) #如果中間的父層資料夾不存在，就一路幫你建起來
+    ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True) #憒?銝剝??撅方??冗銝??剁?撠曹?頝臬鼠雿遣韏瑚?
 
-    # 讀資料
+    # 霈鞈?
     df = pd.read_csv(input_csv_path)
-    print(f"[Day6] 讀入：{input_csv_path} shape={df.shape}")
+    print(f"[Day6] 霈?伐?{input_csv_path} shape={df.shape}")
 
-    # 目標欄檢查與簡單容錯（若 Day4 已處理，這裡通常 OK）
-    check_target_column(df, target_column) #呼叫前面定義好的工具函式
-    if df[target_column].dtype == object: #目標欄位存在 ,目標欄位至少有 2 種不同的值
-        # 嘗試將 YES/NO 轉為 1/0（保險用）
-        mapper = {"YES":1,"NO":0,"Y":1,"N":0,"TRUE":1,"FALSE":0,"是":1,"否":0,"1":1,"0":0,"1.0":1,"0.0":0}
+    # ?格?甈炎?亥?蝪∪摰寥嚗 Day4 撌脰????ㄐ?虜 OK嚗?
+    check_target_column(df, target_column) #?澆?摰儔憟賜?撌亙?賢?
+    if df[target_column].dtype == object: #?格?甈?摮 ,?格?甈??喳???2 蝔桐?????
+        # ?岫撠?YES/NO 頧 1/0嚗??芰嚗?
+        mapper = {"YES":1,"NO":0,"Y":1,"N":0,"TRUE":1,"FALSE":0,"??:1,"??:0,"1":1,"0":0,"1.0":1,"0.0":0}
         df[target_column] = df[target_column].astype(str).str.strip().str.upper().map(mapper)
 
     X, y = prepare_features_and_target(df, target_column)
 
-    """ 呼叫函式 prepare_features_and_target,把資料切成:
-        X = 特徵features,就是除了目標欄位以外的所有欄位。
-        y = 標籤target,就是我們要預測的目標欄位。
-    這一步同時會處理：
-        one-hot 編碼（把字串欄位轉成數字）。
-        inf/NaN 清理（避免後續模型崩潰）。 """
+    """ ?澆?賢? prepare_features_and_target,??????
+        X = ?孵噩features,撠望?支??格?甈?隞亙?????雿?
+        y = 璅惜target,撠望???葫?璅?雿?
+    ??甇亙?????嚗?
+        one-hot 蝺函Ⅳ嚗?摮葡甈?頧??詨?嚗?
+        inf/NaN 皜?嚗??蝥芋?援瞏堆???"""
 
-    # 匯入 sklearn 元件（若未安裝則提示）
+    # ?臬 sklearn ?辣嚗?芸?鋆??內嚗?
     try:
         from sklearn.model_selection import StratifiedKFold 
-        #交叉驗證器，確保每一折的正/負樣本比例接近整體分布（避免嚴重不平衡時有一折全是 0 或全是 1）
-        from sklearn.linear_model import LogisticRegression #baseline 模型
-        from sklearn.naive_bayes import GaussianNB   #Naive Bayes baseline 模型
+        #鈭文?撽??剁?蝣箔?瘥???甇?鞎見?祆?靘餈擃?撣??踹??湧?銝像銵⊥??????0 ???1嚗?
+        from sklearn.linear_model import LogisticRegression #baseline 璅∪?
+        from sklearn.naive_bayes import GaussianNB   #Naive Bayes baseline 璅∪?
         from sklearn.metrics import (
             accuracy_score, precision_score, recall_score, f1_score,
             roc_curve, auc, classification_report
         )
     except Exception:
-        print("[Day6] 尚未安裝 scikit-learn,請先安裝:python -m pip install scikit-learn")
+        print("[Day6] 撠摰? scikit-learn,隢?摰?:python -m pip install scikit-learn")
         return ARTIFACTS_DIR
 
-    # 建立要比較的模型（可依需求擴充）
+    # 撱箇?閬?頛?璅∪?嚗靘?瘙??
     models = [
         ("logistic_regression", LogisticRegression(max_iter=1000, class_weight="balanced")),
-        # max_iter=1000：允許迭代最多 1000 次   class_weight="balanced"：自動調整類別權重，處理類別不平衡問題
+        # max_iter=1000嚗?閮梯翮隞??憭?1000 甈?  class_weight="balanced"嚗?矽?湧??交?????憿銝像銵∪?憿?
         ("gaussian_naive_bayes", GaussianNB()),
-        # 高斯分佈的朴素貝葉斯分類器  適合處理數值型資料，假設特徵符合常態分佈。
+        # 擃???蝝?????? ?拙????詨澆?鞈?嚗?閮剔敺萇泵?虜??雿?
     ]
 
-    # 交叉驗證器（確保每一折 (fold) 的正負樣本比例（0/1）跟整體資料集相近，避免某折全是 0 沒有 1。）
+    # 鈭文?撽??剁?蝣箔?瘥???(fold) ?迤鞎見?祆?靘?0/1嚗??湧?鞈??餈??踹????冽 0 瘝? 1??
     kfold = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
 
-    all_rows = []  #放每一折 (fold) 的結果
-    # 用來繪製平均 ROC 的容器（分別存放每個模型在每一折得到的 FPR / TPR）
+    all_rows = []  #?暹?銝??(fold) ????
+    # ?其?蝜芾ˊ撟喳? ROC ?捆?剁??摮瘥芋?瘥????啁? FPR / TPR嚗?
     model_to_fprs = {name: [] for name, _ in models}
     model_to_tprs = {name: [] for name, _ in models}
 
-    # 先清空/建立詳細報告檔
+    # ??蝛?撱箇?閰喟敦?勗?瑼?
     with open(CV_REPORT_TXT, "w", encoding="utf-8") as f:
         f.write("Day6 Cross-Validation Classification Reports\n")
 
-    # 逐模型、逐折訓練與評估
-    for model_name, model_obj in models:  #交叉驗證要針對「每一種模型」都跑一遍
-        fold_index = 0 # 從0開始編號
+    # ?芋??閮毀??隡?
+    for model_name, model_obj in models:  #鈭文?撽?閬?撠?銝蝔格芋?頝???
+        fold_index = 0 # 敺???蝺刻?
         for train_index, valid_index in kfold.split(X, y):
-            # train_index：這一折的訓練集樣本索引 valid_index：這一折的驗證集樣本索引
-            # K折交叉驗證，把資料分成K份，輪流挑1份當驗證集，其餘當訓練集。
-            fold_index += 1 #記錄目前是第幾折 (fold)，方便之後輸出結果或報告時標註
+            # train_index嚗???閮毀?見?祉揣撘?valid_index嚗???撽??見?祉揣撘?
+            # K?漱??霅??????隞踝?頛芣???隞賜撽????園??嗉?蝺湧???
+            fold_index += 1 #閮??桀??舐洵撟暹? (fold)嚗靘蹂?敺撓?箇????勗???閮?
 
             X_train = X.iloc[train_index]
             y_train = y.iloc[train_index]
             X_valid = X.iloc[valid_index]
             y_valid = y.iloc[valid_index]
-            # 依照 KFold 分好的索引，把原始資料拆成「訓練特徵、訓練標籤」與「驗證特徵、驗證標籤
+            # 靘 KFold ?末?揣撘???憪?????蝺渡敺萸?蝺湔?蝐扎???霅敺萸?霅?蝐?
 
-            model_obj.fit(X_train, y_train) #對訓練集做「學習」，更新模型的參數
-            y_pred = model_obj.predict(X_valid) #用訓練好的模型，對驗證集做預測
-            """ 結果是 預測標籤 (0/1)，會拿來跟真實的 y_valid 做比較，算正確率、精確率等指標。 """
-            # 嘗試取得機率（繪 ROC 需要）
+            model_obj.fit(X_train, y_train) #撠?蝺湧??飛蝧??湔璅∪?????
+            y_pred = model_obj.predict(X_valid) #?刻?蝺游末?芋??撠?霅???皜?
+            """ 蝯????葫璅惜 (0/1)嚗??蹂?頝?撖衣? y_valid ??頛?蝞迤蝣箇??移蝣箇?蝑?璅?"""
+            # ?岫??璈?嚗鼓 ROC ?閬?
             try:
                 y_proba = model_obj.predict_proba(X_valid)[:, 1]
-                # 讓模型輸出「機率預測」  這裡用陣列切片罹患肺癌 (1) 的機率
+                # 霈芋?撓?箝???皜研? ?ㄐ?券???蝴????(1) ????
             except Exception:
                 y_proba = None
-            """ 嘗試取得模型對「類別 1」的預測機率,如果模型不支援,就先放棄,標記成 None """
+            """ ?岫??璅∪?撠???1???葫璈?,憒?璅∪?銝??撠勗??暹?,璅???None """
 
-            # 計算評估指標
-            acc  = accuracy_score(y_valid, y_pred)  # (預測正確的筆數) ÷ (總筆數)
-            prec = precision_score(y_valid, y_pred, zero_division=0) # 真陽性 ÷ (真陽性 + 假陽性)
-            rec  = recall_score(y_valid, y_pred, zero_division=0) # 真陽性 ÷ (真陽性 + 假陰性)
-            f1   = f1_score(y_valid, y_pred, zero_division=0) #F1 = 2 × (precision × recall) ÷ (precision + recall)
-            """  zero_division=0  有時候分母可能變成 0(例如模型完全沒預測「正樣本) """
-            # ROC-AUC（需要機率），無法取得機率就以 NaN 表示
-            if y_proba is not None: # 如果模型沒有提供機率輸出，直接跳過 ROC 計算
-                fpr, tpr, _ = roc_curve(y_valid, y_proba)# 根據真實標籤 (y_valid) 與預測機率 (y_proba) 計算 ROC 曲線座標
-                roc_auc = auc(fpr, tpr)  # AUC 代表 ROC 曲線下的面積，值域 0~1，越接近 1 越好
-                model_to_fprs[model_name].append(fpr)  #(假陽性率, x 軸)
-                model_to_tprs[model_name].append(tpr) #(真陽性率, y 軸)
+            # 閮?閰摯??
+            acc  = accuracy_score(y_valid, y_pred)  # (?葫甇?Ⅱ???? 繩 (蝮賜???
+            prec = precision_score(y_valid, y_pred, zero_division=0) # ???繩 (???+ ???
+            rec  = recall_score(y_valid, y_pred, zero_division=0) # ???繩 (???+ ???
+            f1   = f1_score(y_valid, y_pred, zero_division=0) #F1 = 2 ? (precision ? recall) 繩 (precision + recall)
+            """  zero_division=0  ????瘥?質???0(靘?璅∪?摰瘝?皜研迤璅?) """
+            # ROC-AUC嚗?閬???嚗瘜?敺??停隞?NaN 銵函內
+            if y_proba is not None: # 憒?璅∪?瘝???璈?頛詨嚗?亥歲??ROC 閮?
+                fpr, tpr, _ = roc_curve(y_valid, y_proba)# ?寞??祕璅惜 (y_valid) ??皜祆???(y_proba) 閮? ROC ?脩?摨扳?
+                roc_auc = auc(fpr, tpr)  # AUC 隞?” ROC ?脩?銝??Ｙ?嚗澆? 0~1嚗??亥? 1 頞末
+                model_to_fprs[model_name].append(fpr)  #(??抒?, x 頠?
+                model_to_tprs[model_name].append(tpr) #(??抒?, y 頠?
             else:
                 roc_auc = np.nan 
-            """ 如果模型沒機率輸出，就把 AUC 設成 NaN (Not a Number)，避免程式崩潰 """
+            """ 憒?璅∪?瘝??撓?綽?撠望? AUC 閮剜? NaN (Not a Number)嚗??撘援瞏?"""
             all_rows.append({
                 "model": model_name,
                 "fold": fold_index,
@@ -241,38 +244,39 @@ def run_day6(
                 "f1": f1,
                 "roc_auc": roc_auc,
             })
-            """ 把這一折的所有指標打包成一個字典，丟進 all_rows。
-            最後會轉成 DataFrame (pd.DataFrame(all_rows))，再輸出到 cv_metrics.csv """
+            """ ???????璅???銝???賂?銝?all_rows??
+            ?敺?頧? DataFrame (pd.DataFrame(all_rows))嚗?頛詨??cv_metrics.csv """
 
-            # 寫入分類報告（方便審核每一折的表現）
+            # 撖怠???勗?嚗靘踹祟?豢?銝??銵函嚗?
             with open(CV_REPORT_TXT, "a", encoding="utf-8") as f:
                 f.write(f"\n=== {model_name} | fold {fold_index} ===\n")
                 f.write(classification_report(y_valid, y_pred, digits=4))
 
-        # 模型層級的平均 ROC（若該模型各折都有 FPR/TPR 資料）
+        # 璅∪?撅斤??像??ROC嚗閰脫芋?????FPR/TPR 鞈?嚗?
         if model_to_fprs[model_name] and model_to_tprs[model_name]:
-            """ model_to_fprs[model_name]：存放這個模型 每一折的 FPR(False Positive Rate 假陽性率）。
-                model_to_tprs[model_name]：存放這個模型 每一折的 TPR(True Positive Rate 真陽性率） """
+            """ model_to_fprs[model_name]嚗??暸芋??瘥??? FPR(False Positive Rate ??抒?嚗?
+                model_to_tprs[model_name]嚗??暸芋??瘥??? TPR(True Positive Rate ??抒?嚗?"""
             mean_roc_path = ARTIFACTS_DIR / f"cv_mean_roc_{model_name}.png"
             plot_mean_roc(model_to_fprs[model_name], model_to_tprs[model_name], mean_roc_path, f"CV Mean ROC - {model_name}")
-            """ model_to_fprs[model_name] → 該模型在 K 折中每一折的 FPR。
-                model_to_tprs[model_name] → 該模型在 K 折中每一折的 TPR。
-                mean_roc_path → 輸出檔案路徑。
-                f"CV Mean ROC - {model_name}" → 圖表標題,例如「CV Mean ROC - logistic_regression」。 """
-    # 將所有折的結果彙整成表格並輸出
+            """ model_to_fprs[model_name] ??閰脫芋? K ?葉瘥??? FPR??
+                model_to_tprs[model_name] ??閰脫芋? K ?葉瘥??? TPR??
+                mean_roc_path ??頛詨瑼?頝臬???
+                f"CV Mean ROC - {model_name}" ???”璅?,靘??V Mean ROC - logistic_regression??"""
+    # 撠????????湔?銵冽銝西撓??
     metrics_df = pd.DataFrame(all_rows)
     metrics_df.to_csv(CV_METRICS_CSV, index=False, encoding="utf-8-sig")
 
-    # 額外產出「各模型平均分數」的摘要印在終端（方便快速檢視）
-    if not metrics_df.empty: # 如果完全沒有資料（例如模型沒跑成功），就不要做後續平均計算
+    # 憿??Ｗ??璅∪?撟喳???????啣蝯垢嚗靘踹翰?炎閬?
+    if not metrics_df.empty: # 憒?摰瘝?鞈?嚗?憒芋??頝???嚗停銝???蝥像??蝞?
         summary = metrics_df.groupby("model")[["accuracy", "precision", "recall", "f1", "roc_auc"]].mean().round(4)
-        # 算出「交叉驗證的平均成績
-        print("\n=== Day6 各模型交叉驗證平均分數 ===")
+        # 蝞?漱??霅?撟喳??蜀
+        print("\n=== Day6 ?芋?漱??霅像????===")
         print(summary)
 
-    print(f"\n[Day6] ✅ 完成輸出：\n- {CV_METRICS_CSV}\n- {CV_REPORT_TXT}\n- {ARTIFACTS_DIR} 下各模型的平均 ROC 圖（若可計算）")
+    print(f"\n[Day6] ??摰?頛詨嚗n- {CV_METRICS_CSV}\n- {CV_REPORT_TXT}\n- {ARTIFACTS_DIR} 銝?璅∪??像??ROC ???亙閮?嚗?)
     return ARTIFACTS_DIR
 
 
 if __name__ == "__main__":
     run_day6()
+

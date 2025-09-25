@@ -1,61 +1,64 @@
+﻿# Day2 pipeline: 清理與初步特徵工程
+# 註解：僅新增說明，不影響程式邏輯
+
 import pandas as pd
 import numpy as np
 from pathlib import Path
 import sys
 import matplotlib.pyplot as plt
 from pathlib import Path
-ROOT = Path(__file__).resolve().parent.parent  # 指到 lung_project 根目錄
+ROOT = Path(__file__).resolve().parent.parent  # ? lung_project ?寧??
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 from project_config import PROC_OUT, OUTPUT_DAY2
 
 def run_day2():
-    # 讀取 Day1 輸出（相當於你原本上半段跑完的 df_processed）
+    # 霈??Day1 頛詨嚗?嗆雿??砌??挾頝???df_processed嚗?
     if not Path(PROC_OUT).exists():
-        raise FileNotFoundError(f"[錯誤] 找不到 Day1 輸出：{PROC_OUT}，請先執行 Day1。")
+        raise FileNotFoundError(f"[?航炊] ?曆???Day1 頛詨嚗PROC_OUT}嚗??銵?Day1??)
     df_processed = pd.read_csv(PROC_OUT, encoding="utf-8-sig")
 
     cat_cols = df_processed.select_dtypes(include="object").columns.tolist()
-    yesno_cols = []  # 收集真正的 YES/NO 欄位名稱
+    yesno_cols = []  # ?園??迤??YES/NO 甈??迂
 
     for col in cat_cols:
-        # 將此欄位標準化（轉字串、大寫、去前後空白），用於檢查值域
+        # 撠迨甈?璅???頧?銝脯之撖怒??蝛箇嚗??冽瑼Ｘ?澆?
         vals = df_processed[col].astype(str).str.upper().str.strip()
-        uniq = set(vals.dropna().unique())  # 去除缺失值後取得唯一值集合
-        if uniq.issubset({"YES", "NO"}):   # 只有 YES/NO 才視為二元欄位
+        uniq = set(vals.dropna().unique())  # ?駁蝻箏仃?澆????臭??潮???
+        if uniq.issubset({"YES", "NO"}):   # ?芣? YES/NO ???箔???雿?
             yesno_cols.append(col)
 
-    print(f"[Day2] 偵測到 YES/NO 欄位：{yesno_cols if yesno_cols else '（無）'}")
+    print(f"[Day2] ?菜葫??YES/NO 甈?嚗yesno_cols if yesno_cols else '嚗嚗?}")
 
-    # 對辨識出的 YES/NO 欄位做映射；轉為 float 方便後續統計與缺失值處理
+    # 撠儘霅??YES/NO 甈???撠?頧 float ?嫣噶敺?蝯梯??撩憭勗潸???
     for col in yesno_cols:
         df_processed[col] = (
             df_processed[col]
-            .astype(str).str.upper().str.strip()   # 與檢查時一致的正規化
-            .map({"YES": 1, "NO": 0})              # YES→1, NO→0
-            .astype("float")                        # 轉數值，方便 mean() 等操作
+            .astype(str).str.upper().str.strip()   # ?炎?交?銝?渡?甇????
+            .map({"YES": 1, "NO": 0})              # YES??, NO??
+            .astype("float")                        # 頧?潘??嫣噶 mean() 蝑?雿?
         )
 
-    # Step 11：檢查缺失值情況
-    # 顯示各欄位 NaN 的數量，快速掌握需要處理的欄位
-    print("\n=== 缺失值統計（各欄位 NaN 筆數）===")
+    # Step 11嚗炎?亦撩憭勗潭?瘜?
+    # 憿舐內??雿?NaN ???敹恍??⊿?閬???甈?
+    print("\n=== 蝻箏仃?潛絞閮???雿?NaN 蝑嚗?==")
     na_counts = df_processed.isna().sum()
-    print(na_counts[na_counts > 0].sort_values(ascending=False) if na_counts.any() else "無缺失值")
+    print(na_counts[na_counts > 0].sort_values(ascending=False) if na_counts.any() else "?∠撩憭勗?)
 
-    # Step 12：缺失值處理（示範）
-    # 原則：
-    # - 數值欄位（int/float）→ 以平均值填補
-    # - 仍為字串的欄位（object）→ 以眾數填補
-    # 注意：正式專案可依情境改為中位數、固定值或進階填補法
+    # Step 12嚗撩憭勗潸???蝷箇?嚗?
+    # ??嚗?
+    # - ?詨潭?雿?int/float嚗? 隞亙像?澆‵鋆?
+    # - 隞摮葡??雿?object嚗? 隞亦?詨‵鋆?
+    # 瘜冽?嚗迤撘?獢靘?憓?箔葉雿?摰潭??脤?憛怨?瘜?
    
-    # 12.1 數值欄位（同時涵蓋 int 與 float）
+    # 12.1 ?詨潭?雿???瘨菔? int ??float嚗?
     num_cols = df_processed.select_dtypes(include=[np.number]).columns
     for col in num_cols:
         if df_processed[col].isna().any():
             mean_val = df_processed[col].mean()
             df_processed[col] = df_processed[col].fillna(mean_val)
 
-    # 12.2 仍為字串的欄位（若存在）
+    # 12.2 隞摮葡??雿??亙??剁?
     obj_cols = df_processed.select_dtypes(include="object").columns
     for col in obj_cols:
         if df_processed[col].isna().any():
@@ -63,49 +66,49 @@ def run_day2():
             if not mode_val.empty:
                 df_processed[col] = df_processed[col].fillna(mode_val.iloc[0])
 
-    print("\n[Day2] 缺失值處理完成")
+    print("\n[Day2] 蝻箏仃?潸?????)
 
     
-    # Step 13：資料分佈檢視
-    # - 若存在 AGE，輸出其描述統計
-    # - 對 LUNG_CANCER 顯示計數與百分比分佈，便於檢查類別不平衡
+    # Step 13嚗???雿炎閬?
+    # - ?亙???AGE嚗撓?箏?膩蝯梯?
+    # - 撠?LUNG_CANCER 憿舐內閮?????嚗噶?潭炎?仿??乩?撟唾﹛
    
     if "AGE" in df_processed.columns:
-        print("\n=== 年齡分佈（AGE.describe）===")
+        print("\n=== 撟湧翩??嚗GE.describe嚗?==")
         print(df_processed["AGE"].describe())
 
-    print("\n=== LUNG_CANCER 分佈（計數 / 百分比）===")
+    print("\n=== LUNG_CANCER ??嚗???/ ?曉?瘥?===")
     if "LUNG_CANCER" in df_processed.columns:
         counts = df_processed["LUNG_CANCER"].value_counts(dropna=False)
         perc = (df_processed["LUNG_CANCER"].value_counts(normalize=True, dropna=False) * 100).round(2)
-        print("計數：")
+        print("閮嚗?)
         print(counts)
-        print("\n百分比（%）：")
+        print("\n?曉?瘥?%嚗?")
         print(perc)
     else:
-        print("找不到 LUNG_CANCER 欄位")
+        print("?曆???LUNG_CANCER 甈?")
 
     
-    # Step 14：輸出 Day 2 處理後的檔案
-    # 與 Day 1 分檔存放，避免覆蓋；使用 UTF-8 確保中文不亂碼
+    # Step 14嚗撓??Day 2 ??敺?瑼?
+    # ??Day 1 ??摮嚗????雿輻 UTF-8 蝣箔?銝剜?銝?蝣?
     
     OUTPUT_DAY2.parent.mkdir(parents=True, exist_ok=True)
     df_processed.to_csv(OUTPUT_DAY2, index=False, encoding="utf-8-sig")
-    print(f"✅ Day 2 CSV 已儲存：{OUTPUT_DAY2}")
+    print(f"??Day 2 CSV 撌脣摮?{OUTPUT_DAY2}")
 
 
-    # Step 15 分組折線圖
+    # Step 15 ??????
     if "AGE" in df_processed.columns:
 
-        # 分組，例如每 5 歲一組
+        # ??嚗?憒? 5 甇脖?蝯?
         bin_size = 5
         age_bins = pd.cut(df_processed["AGE"],
                           bins=range(int(df_processed["AGE"].min()), int(df_processed["AGE"].max()) + bin_size, bin_size))
 
-        # 計算每組筆數
+        # 閮?瘥?蝑
         age_group_counts = age_bins.value_counts().sort_index()
 
-        # 用中位數當作 x 軸座標
+        # ?其葉雿?嗡? x 頠詨漣璅?
         bin_midpoints = [interval.mid for interval in age_group_counts.index]
 
         plt.plot(bin_midpoints, age_group_counts.values, marker='o', linewidth=2, color="teal")
@@ -120,6 +123,7 @@ def run_day2():
         out = plots_dir / "day2_age_grouped_line.png"
         plt.savefig(out, dpi=150)
         plt.close()
-        print(f"[Day2] 已輸出圖檔：{out}")
+        print(f"[Day2] 撌脰撓?箏?瑼?{out}")
 if __name__ == "__main__":
     run_day2()
+
