@@ -1,13 +1,13 @@
 from pathlib import Path
-
+import os
 # Step 2: 設定檔案路徑（你的肺癌問卷 CSV 檔案）
 # r"..." 代表原始字串（raw string），可以避免 Windows 路徑的 \ 被當成跳脫字元。
-csv_path = Path(r"D:\Microsoft VS Code\javacsript\Lung cancer\survey lung cancer.csv")
+csv_path = Path(os.getenv("LUNG_CSV", r"D:\Microsoft VS Code\javacsript\Lung cancer\survey lung cancer.csv"))
 
 # 輸出資料夾
-RAW_DIR = Path("data_lung/raw")
-PROCESSED_DIR = Path("data_lung/processed")
-PLOTS_DIR = Path("data_lung/plots")
+RAW_DIR = Path("data_lung/raw")       #存放原始資料（raw）的資料夾
+PROCESSED_DIR = Path("data_lung/processed")   #存放清理/轉換後資料（processed）的資料夾
+PLOTS_DIR = Path("data_lung/plots")     #圖表輸出（plots）的資料夾
 
 # Day1 固定輸出（Day2 會讀這個）
 RAW_OUT = RAW_DIR / "survey_lung_raw.csv"
@@ -44,3 +44,7 @@ OUTPUT_CSV_DAY4 = PROCESSED_DIR / "survey_lung_day4.csv"
 # Day5 產物資料夾（ROC、混淆矩陣、metrics 等）
 ARTIFACTS_DAY5 = Path("artifacts_day5")
 
+def ensure_dirs():
+    for p in [RAW_DIR, PROCESSED_DIR, PLOTS_DIR, ARTIFACTS_DAY5]:
+        p.mkdir(parents=True, exist_ok=True)
+KEY_COLS = ["PATIENT_ID"]     # 或複合鍵：["PATIENT_ID", "VISIT_DATE"]

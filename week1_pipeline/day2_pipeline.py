@@ -3,6 +3,7 @@ import numpy as np
 from pathlib import Path
 import sys
 import matplotlib.pyplot as plt
+from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent  # 指到 lung_project 根目錄
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -35,21 +36,18 @@ def run_day2():
             .astype("float")                        # 轉數值，方便 mean() 等操作
         )
 
-    # ------------------------------------------------
     # Step 11：檢查缺失值情況
     # 顯示各欄位 NaN 的數量，快速掌握需要處理的欄位
-    # ------------------------------------------------
     print("\n=== 缺失值統計（各欄位 NaN 筆數）===")
     na_counts = df_processed.isna().sum()
     print(na_counts[na_counts > 0].sort_values(ascending=False) if na_counts.any() else "無缺失值")
 
-    # ------------------------------------------------
     # Step 12：缺失值處理（示範）
     # 原則：
     # - 數值欄位（int/float）→ 以平均值填補
     # - 仍為字串的欄位（object）→ 以眾數填補
     # 注意：正式專案可依情境改為中位數、固定值或進階填補法
-    # ------------------------------------------------
+   
     # 12.1 數值欄位（同時涵蓋 int 與 float）
     num_cols = df_processed.select_dtypes(include=[np.number]).columns
     for col in num_cols:
@@ -67,11 +65,11 @@ def run_day2():
 
     print("\n[Day2] 缺失值處理完成")
 
-    # ------------------------------------------------
+    
     # Step 13：資料分佈檢視
     # - 若存在 AGE，輸出其描述統計
     # - 對 LUNG_CANCER 顯示計數與百分比分佈，便於檢查類別不平衡
-    # ------------------------------------------------
+   
     if "AGE" in df_processed.columns:
         print("\n=== 年齡分佈（AGE.describe）===")
         print(df_processed["AGE"].describe())
@@ -87,15 +85,15 @@ def run_day2():
     else:
         print("找不到 LUNG_CANCER 欄位")
 
-    # ------------------------------------------------
+    
     # Step 14：輸出 Day 2 處理後的檔案
     # 與 Day 1 分檔存放，避免覆蓋；使用 UTF-8 確保中文不亂碼
-    # ------------------------------------------------
+    
     OUTPUT_DAY2.parent.mkdir(parents=True, exist_ok=True)
     df_processed.to_csv(OUTPUT_DAY2, index=False, encoding="utf-8-sig")
     print(f"✅ Day 2 CSV 已儲存：{OUTPUT_DAY2}")
 
-    # ------------------------------------------------
+
     # Step 15 分組折線圖
     if "AGE" in df_processed.columns:
 
@@ -116,6 +114,12 @@ def run_day2():
         plt.ylabel("Count")
         plt.grid(True, linestyle="--", alpha=0.6)
         plt.tight_layout()
-        plt.show()
+       
+        plots_dir = Path("data_lung/plots")
+        plots_dir.mkdir(parents=True, exist_ok=True)
+        out = plots_dir / "day2_age_grouped_line.png"
+        plt.savefig(out, dpi=150)
+        plt.close()
+        print(f"[Day2] 已輸出圖檔：{out}")
 if __name__ == "__main__":
     run_day2()

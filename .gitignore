@@ -6,19 +6,48 @@ __pycache__/
 
 # Virtual env
 .venv/
-env/
 venv/
+env/
 
-# IDE
+# Editor/IDE
 .vscode/
 .idea/
 
-# Project outputs (建議不版控)
+# Data & outputs (不版控)
 data_lung/raw/
 data_lung/processed/
 data_lung/plots/
 artifacts_day5/
+*.png
+*.jpg
 
-# OS cruft
+# OS
+.DS_Store
+Thumbs.db
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+
+# VSCode
+.vscode/
+
+# Data artifacts
+data_lung/processed/*
+data_lung/artifacts/**
+!data_lung/processed/README.md
+
+# Models / checkpoints
+*.pkl
+*.joblib
+*.ckpt
+
+# Plots / reports (若要保留成果圖，再移除此列)
+plots/
+reports/
+
+# OS
 .DS_Store
 Thumbs.db

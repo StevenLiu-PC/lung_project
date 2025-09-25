@@ -1,0 +1,16 @@
+Day9 Final Model Report
+Accuracy : 0.9194
+Precision: 0.9623
+Recall   : 0.9444
+F1-score : 0.9533
+ROC-AUC  : 0.9456
+
+=== Classification Report ===
+              precision    recall  f1-score   support
+
+           0     0.6667    0.7500    0.7059         8
+           1     0.9623    0.9444    0.9533        54
+
+    accuracy                         0.9194        62
+   macro avg     0.8145    0.8472    0.8296        62
+weighted avg     0.9241    0.9194    0.9213        62

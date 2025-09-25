@@ -1,0 +1,15 @@
+Day10 Cross-Validation Model Comparison
+Data   : D:\Microsoft VS Code\javacsript\Lung cancer\lung_project\data_lung\processed\survey_lung_day4.csv
+Target : LUNG_CANCER
+CV     : 5-fold StratifiedKFold
+Select : roc_auc
+
+=== Leaderboard (sorted) ===
+             Model  accuracy_mean  accuracy_std  precision_mean  recall_mean  f1_mean  roc_auc_mean
+               SVM       0.867372      0.023412        0.885514     0.974074 0.927512      0.937897
+LogisticRegression       0.919302      0.043200        0.942461     0.966667 0.954110      0.935185
+      RandomForest       0.903067      0.040616        0.935604     0.955556 0.944877      0.931151
+      DecisionTree       0.864357      0.046001        0.928710     0.914815 0.921398      0.715642
+
+Best model: SVM
+roc_auc_mean: 0.9379

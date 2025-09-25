@@ -13,7 +13,7 @@ plt.rcParams["axes.unicode_minus"] = False
 
 # === 路徑設定（優先吃 project_config）===
 from project_config import (
-    OUTPUT_CSV_DAY3 as INPUT_CSV,   # ✅ Day3 的【輸出】拿來當 Day4 的輸入
+    OUTPUT_CSV_DAY3 as INPUT_CSV,   #  Day3 的【輸出】拿來當 Day4 的輸入
     OUTPUT_CSV_DAY4 as OUTPUT_MAIN, # Day4 主輸出
     TARGET_COL as TARGET,           # 目標欄名（例如 LUNG_CANCER）
     LABEL_MAP,                      # 可配置的標籤對照表
@@ -34,13 +34,29 @@ GENERAL_YESNO_MAP = {
 }
 GENERAL_ALLOWED = set(GENERAL_YESNO_MAP.keys())
 
+# ★ Parquet 安全寫入：有引擎就寫，沒有就優雅跳過
+def _write_parquet_safe(df: pd.DataFrame, out_path: Path) -> None:
+    try:
+        df.to_parquet(out_path, index=False, engine="pyarrow")  # ★
+        print(f"[Day4] 已輸出 Parquet（pyarrow）：{out_path}")   # ★
+        return
+    except Exception:
+        pass
+    try:
+        df.to_parquet(out_path, index=False, engine="fastparquet")  # ★
+        print(f"[Day4] 已輸出 Parquet（fastparquet）：{out_path}")  # ★
+        return
+    except Exception:
+        print("[Day4] 跳過 Parquet 輸出：未安裝 pyarrow/fastparquet 或引擎不可用。")  # ★
+        # ★ 不拋例外，讓流程繼續（CSV 仍會輸出）
+
 def _normalize_target_strict(df: pd.DataFrame, strict: bool = True) -> pd.DataFrame:
     """
     ★ 嚴格處理目標欄（只在 Day4 做、保證 Day5 可用）
     流程：
       1) 目標欄存在 → 去空白+轉大寫
       2) 先用 project_config.LABEL_MAP[TARGET] 映射到 0/1
-      3) 若仍全 NaN，嘗試「數字二元容錯」（例如資料其實是 1/2）
+      3) 若仍全 NaN,嘗試「數字二元容錯」（例如資料其實是 1/2)
       4) 嚴格檢查：不得有 NaN、且為二元
     """
     if TARGET not in df.columns:
@@ -83,7 +99,7 @@ def _normalize_target_strict(df: pd.DataFrame, strict: bool = True) -> pd.DataFr
             raise ValueError(f"[Day4] 目標欄 `{TARGET}` 非二元（nunique={nunique}）。")
         df[TARGET] = s_map
     else:
-        # 非嚴格模式（僅本機清資料用，不建議放公開版）：丟掉 NaN 列
+        # 非嚴格模式：丟掉 NaN 列
         if na_cnt:
             df = df[s_map.notna()].copy()
             s_map = s_map.loc[df.index]
@@ -95,8 +111,14 @@ def _normalize_target_strict(df: pd.DataFrame, strict: bool = True) -> pd.DataFr
 
 def run_day4(strict: bool = True):
     # 1) 讀檔
-    df = pd.read_csv(INPUT_CSV)
+    # df = pd.read_csv(INPUT_CSV)
+    df = pd.read_csv(INPUT_CSV, encoding="utf-8-sig")              # ★ 統一讀檔編碼，處理 BOM
+    df.columns = [c.lstrip("\ufeff") for c in df.columns]          # ★ 去掉欄名前導 BOM（保險）
     print("[Day4] 讀入：", df.shape)
+
+    # ★ 新增：檢查是否整份表只有 1 欄（避免只有 target 卻沒特徵）
+    if df.shape[1] <= 1:
+        raise ValueError("[Day4] 輸入資料只有 1 欄，缺少特徵，請檢查 Day3 輸出內容。")
 
     # ★ 1.1) 先處理目標欄（只處理標籤，不動特徵）
     df = _normalize_target_strict(df, strict=strict)
@@ -137,17 +159,19 @@ def run_day4(strict: bool = True):
 
     # 6) 建立輸出資料夾
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True) #確保檔案有存入 
-    df.to_csv(OUTPUT_MAIN, index=False)  #把整理好的資料表 df 存成一個 CSV 檔，檔案路徑就是 OUTPUT_MAIN
-                                         #不要另外存索引欄（index=False）
+    # df.to_csv(OUTPUT_MAIN, index=False)  #把整理好的資料表 df 存成一個 CSV 檔，檔案路徑就是 OUTPUT_MAIN
+    df.to_csv(OUTPUT_MAIN, index=False, encoding="utf-8-sig", sep=",")  # ★ 固定 sep/編碼，Excel 友善、Day10 穩讀
+    _write_parquet_safe(df, Path(OUTPUT_MAIN).with_suffix(".parquet"))  # ★ 內部交換：無引擎時自動跳過
 
     # 7) 欄位摘要（型態/缺值數/唯一值數/範例）
     summary = df.apply(lambda s: pd.Series({
         "dtype": s.dtype,
         "na_cnt": int(s.isna().sum()),
         "nunique": int(s.nunique(dropna=False)),
-        "sample": s.dropna().head(3).tolist()
+        "sample": s.dropna().head(3).tolist()  # ★ 新增：控制範例輸出不要太長
     }))#幫整張資料表做一份『欄位說明書』，包含每一欄的型態、缺值數量、唯一值數量、以及前幾筆範例，
-    summary.to_csv(OUTPUT_SUM)  #存成一個 CSV 檔
+    # summary.to_csv(OUTPUT_SUM)  #存成一個 CSV 檔
+    summary.to_csv(OUTPUT_SUM, encoding="utf-8-sig")               # ★ 摘要也用 utf-8-sig，Excel 顯示不亂碼
 
     print("✅ 完成。主輸出：", OUTPUT_MAIN)
     print("✅ 完成。摘要輸出：", OUTPUT_SUM)
@@ -156,4 +180,3 @@ def run_day4(strict: bool = True):
 
 if __name__ == "__main__":
     run_day4(strict=True)
-
