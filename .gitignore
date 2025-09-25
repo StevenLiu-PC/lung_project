@@ -51,3 +51,10 @@ reports/
 # OS
 .DS_Store
 Thumbs.db
+!data_lung/artifacts/day10/
+!data_lung/artifacts/day10/day10_report.txt
+!data_lung/artifacts/day10/cv_results_day10.csv
+
+__pycache__/
+*.py[cod]
+
