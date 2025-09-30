@@ -1,3 +1,7 @@
+﻿# encoding: utf-8
+# eol: LF
+# summary: feat(day10): 多模型 K-fold 比較、最佳模型重訓與導出
+
 from __future__ import annotations
 from pathlib import Path
 import numpy as np
