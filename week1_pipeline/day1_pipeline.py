@@ -1,3 +1,7 @@
+﻿# encoding: utf-8
+# eol: LF
+# summary: feat(day1): 專案讀檔與初步清洗（UTF-8）
+
 
 # Step 1: 匯入需要的套件
 import os               # 用來建立資料夾（os.makedirs）
