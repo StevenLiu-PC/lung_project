@@ -1,3 +1,7 @@
+﻿# encoding: utf-8
+# eol: LF
+# summary: feat(day9): 最終測試、ROC/CM 圖與報告
+
 import sys
 from pathlib import Path
 import pandas as pd
