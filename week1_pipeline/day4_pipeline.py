@@ -1,3 +1,7 @@
+﻿# encoding: utf-8
+# eol: LF
+# summary: feat(day4): 嚴格目標欄正規化 + 缺值處理
+
 import sys
 from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
