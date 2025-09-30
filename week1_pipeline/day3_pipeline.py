@@ -1,3 +1,7 @@
+﻿# encoding: utf-8
+# eol: LF
+# summary: feat(day3): 進階清洗與特徵初整
+
 import sys
 from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent  # lung_project 資料夾
