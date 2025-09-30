@@ -1,3 +1,7 @@
+﻿# encoding: utf-8
+# eol: LF
+# summary: feat(day2): 探索式分析與圖表
+
 import pandas as pd
 import numpy as np
 from pathlib import Path
