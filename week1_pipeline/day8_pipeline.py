@@ -1,3 +1,7 @@
+﻿# encoding: utf-8
+# eol: LF
+# summary: feat(day8): 模型挑選與最佳化、持久化
+
 import sys
 from pathlib import Path
 
