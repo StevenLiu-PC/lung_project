@@ -1,3 +1,7 @@
+﻿# encoding: utf-8
+# eol: LF
+# summary: feat(day6): 交叉驗證骨架與報告
+
 import sys
 from pathlib import Path
 
