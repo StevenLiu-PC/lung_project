@@ -1,3 +1,7 @@
+﻿# encoding: utf-8
+# eol: LF
+# summary: feat(day5): baseline 模型與指標
+
 # --- 確保能 import 專案根的 project_config.py ---
 import sys
 from pathlib import Path
