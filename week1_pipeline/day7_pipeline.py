@@ -1,3 +1,7 @@
+﻿# encoding: utf-8
+# eol: LF
+# summary: feat(day7): 多模型比較與重要度
+
 import sys
 from pathlib import Path
 import numpy as np
